@@ -1,6 +1,6 @@
 package com.example.algo.state;
 
-import java.awt.List;
+import java.util.List;
 import java.util.ArrayList;
 
 import com.example.algo.player.Player;
@@ -9,8 +9,8 @@ public class GameState {
 	/*
 	 * Definitions
 	 */
-	private final Cell[] board = new Cell[30];
-	private final List<Piece> pieces = new ArrayList<>();
+	public final Cell[] board = new Cell[30];
+	public final List<Piece> pieces = new ArrayList<>();
 	private int currentPlayerIndex;
 	private int heuristec;
 
@@ -21,15 +21,23 @@ public class GameState {
 		return board[index];
 	}
 
-	public List getPiecesFor(Player player) {
-		return pieces.stream()
-				.filter(p -> p.getOwner().equals(player)).toList();
+	public int getHeuristec() {
+		return this.heuristec;
+	}
+	
+	public List<Piece> getPiecesFor(Player player){
+	    return pieces.stream()
+	                 .filter(p -> player.equals(p.getOwner()))
+	                 .toList();
 	}
 
 	public int calculateHeuristec(Player player) {
 		// the return value is wrong , we need to calculate what we want .
-		// PS: we need to make it for each player ( idk yet we need to talk about this
-		// ).
-		return 0;
+		List<Piece> player_pieces = getPiecesFor(player);
+		int count = 0; 
+		for(Piece current : player_pieces) {
+			count += current.getPosition();
+		}
+		return count/player_pieces.size();
 	}
 }
