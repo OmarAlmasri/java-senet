@@ -27,6 +27,7 @@ public class Piece {
 		return position; 
 	}
 	public void moveTo(int newPosition) {
+    System.out.println("the old position of the piece is : " + this.position + " and the new position will be " + newPosition);
 		this.position = newPosition;
 	}
 	

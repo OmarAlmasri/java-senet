@@ -25,7 +25,7 @@ public class GameInitializer {
 
 		placePiecesOnBoard(pieces);
 
-		return new GameState(board, pieces);
+		return new GameState(board, pieces, players);
 	}
 
 	// protected List<Player> createPlayers() {
@@ -79,7 +79,7 @@ public class GameInitializer {
 			}
 
 			// Move the piece to the right initial position
-			pieceToPlace.moveTo(cellNumber);
+			pieceToPlace.moveTo(i);
 		}
 	}
 }

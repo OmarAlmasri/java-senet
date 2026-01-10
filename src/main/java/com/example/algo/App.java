@@ -2,7 +2,7 @@ package com.example.algo;
 
 import java.util.List;
 
-import com.example.algo.move.Move;
+import com.example.algo.move.*;
 import com.example.algo.player.Player;
 import com.example.algo.rules.RuleEngine;
 import com.example.algo.setup.GameInitializer;
@@ -11,6 +11,7 @@ import com.example.algo.state.GameState;
 import com.example.algo.state.Piece;
 import com.example.algo.strategy.human.HumanStrategy;
 import com.example.algo.util.GeneralUtil;
+import com.example.algo.util.StickThrow;
 
 public class App 
 {
@@ -25,8 +26,7 @@ public class App
 		//TODO: 
 		//1- initialize the game (board , pieces , players ) . 
 		GameInitializer initializer = new GameInitializer();
-		GameState initialState = initializer.createNewGame(players);
-
+		GameState state = initializer.createNewGame(players);
 		//2- create players and the strategies . 
 		//(in the first case both of them is a HumanStrategy ) .
 
@@ -34,34 +34,96 @@ public class App
 
 		boolean gameOver = false;
 
+		GeneralUtil.testGameInitialization(state);
 		RuleEngine rules = new RuleEngine();
+    System.out.println(state.board.toString());
+    state.printCells();
 		// 3- create a game loop 
 		// this would be the most important function cause here everything would work. 
-		// while (!gameOver) {
-		// 	Player current = players[currentPlayerIndex];
-		// 	// let the current player try a move . 
-		// 	try {
-		// 		/*
-		// 		 * in here we would select the move and the apply the move 
-		// 		 */
-		// 		Move move = rules.resolveMove(current,
-		// 				current.getStrategy(),
-		// 				initialState);
-		// 		// we would apply the move , I think this is good .
-		// 		// initialState.applyMove(move);
-		// 	} catch (UnsupportedOperationException e) {
-		// 		System.out.println(current.getName() + "move is wrong");
-		// 	}
+		while (!gameOver) {
+            // Current player
+            Player current = state.getCurrentPlayer();
+            GeneralUtil.printBoard(state);
+            int stick = StickThrow.throwSticks();
 
-		// 	// switch to the other player : 
-		// 	currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
+            /*
+             * =================================================
+             * Handling the last 3 cases effects 
+             * =================================================
+             */
+            Piece pending = state.getPendingThreeTruthsPiece();
+            Piece pending_atoum = state.getPendingAtoumPiece();
+            Piece pending_Horus = state.getPendingHorusPiece();
+            if (pending != null && state.getPendingThreeTruthsPlayerIndex() == state.currentPlayerIndex) {
+                System.out.println("Resolving Three Truths effect! Stick rolled: " + stick);
 
-		// 	// check if the game is over .
-		// 	gameOver = GeneralUtil.checkGameOver(initialState);
-		// }
+                MovePiece chosenMove = current.getStrategy().chooseMove(state, current, stick);
 
-		GeneralUtil.testGameInitialization(initialState);
-		GeneralUtil.printBoardCompact(initialState);
+                if (chosenMove.getPiece().equals(pending) && stick == 3) {
+                    System.out.println(pending.getOwner().getName() + "'s piece is removed by Three Truths!");
+                    state.removePiece(pending);
+                    state.clearPendingThreeTruthsPiece();
+            gameOver = GeneralUtil.checkGameOver(state);
+            state.switchPlayer();
+                    continue;
+                } else {
+                    System.out.println(pending.getOwner().getName() + "'s piece is sent to Rebirth!");
+                    GeneralUtil.sendToReBirth(pending, state);
+                    state.clearPendingThreeTruthsPiece();
+            gameOver = GeneralUtil.checkGameOver(state);
+            state.switchPlayer();
+                    continue;
+                }
+            } else if (pending_atoum != null && state.getPendingAtoumPlayerIndex() == state.currentPlayerIndex){
+                System.out.println("Resolving atoum effect! Stick rolled: " + stick);
+                MovePiece chosenMove = current.getStrategy().chooseMove(state, current, stick);
+                if (chosenMove.getPiece().equals(pending_atoum) && stick == 2) {
+                    System.out.println(pending_atoum.getOwner().getName() + "'s piece is removed by Atoum!");
+                    state.removePiece(pending_atoum);
+                    state.clearPendingAtoumPiece();
+            gameOver = GeneralUtil.checkGameOver(state);
+            state.switchPlayer();
+                    continue;
+                } else {
+                    System.out.println(pending_atoum.getOwner().getName() + "'s piece is sent to Rebirth!");
+                    GeneralUtil.sendToReBirth(pending_atoum, state);
+                    state.clearPendingAtoumPiece();
+            gameOver = GeneralUtil.checkGameOver(state);
+            state.switchPlayer();
+                    continue;
+                }
+            } else if (pending_Horus != null && state.getPendingHorusPlayerIndex() == state.currentPlayerIndex){
+                System.out.println("Resolving horus effect! Stick rolled: " + stick);
+                MovePiece chosenMove = current.getStrategy().chooseMove(state, current, stick);
+                if (chosenMove.getPiece().equals(pending_Horus) && stick == 2) {
+                    System.out.println(pending_Horus.getOwner().getName() + "'s piece is removed by Horus!");
+                    state.removePiece(pending_Horus);
+                    state.clearPendingHorusPiece();
+            gameOver = GeneralUtil.checkGameOver(state);
+            state.switchPlayer();
+                    continue;
+                } else {
+                    System.out.println(pending_Horus.getOwner().getName() + "'s piece is sent to Rebirth!");
+                    GeneralUtil.sendToReBirth(pending_Horus, state);
+                    state.clearPendingHorusPiece();
+            gameOver = GeneralUtil.checkGameOver(state);
+            state.switchPlayer();
+                    continue;
+                }
+
+            }else {
+                // Normal turn
+                System.out.println(current.getName() + " rolled: " + stick);
+                MovePiece move = current.getStrategy().chooseMove(state, current, stick);
+                move.execute(state);
+            }
+
+            gameOver = GeneralUtil.checkGameOver(state);
+
+            state.switchPlayer();
+        }
+
+		GeneralUtil.printBoard(state);
 		
 		System.out.println("game over");
 	}

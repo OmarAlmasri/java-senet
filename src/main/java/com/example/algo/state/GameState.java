@@ -12,9 +12,25 @@ public class GameState {
 	public final Cell[] board;
 	public final List<Piece> pieces;
 	public final Player[] players;
-	private int currentPlayerIndex;
+	public int currentPlayerIndex;
 	private int heuristec;
+	private Piece pendingThreeTruthsPiece = null;  
+	private int pendingThreeTruthsPlayerIndex = -1; 
+	private Piece pendingAtoumPiece = null;  
+	private int pendingAtoumPlayerIndex = -1; 
+	private Piece pendingHorusPiece = null;  
+	private int pendingHorusPlayerIndex = -1; 
 
+
+
+
+  public void printCells(){
+    int index = 0; 
+    for(Cell cell : board){
+      System.out.println("index: " + index + " class type : " +cell.getClass().getSimpleName());
+      index ++ ;
+    }
+  }
 
 	public GameState(Cell[] board, List<Piece> pieces, Player[] players) {
 		this.board = new Cell[30];
@@ -41,6 +57,14 @@ public class GameState {
 		return this.heuristec;
 	}
 
+  public Piece getPieceAtIndex(int index){
+    for (Piece piece : pieces) {
+        if (piece.getPosition() == index) {
+            return piece;
+        }
+    }
+    return null;
+  }
 	public List<Piece> getPiecesFor(Player player) {
 		return pieces.stream()
 				.filter(p -> player.equals(p.getOwner()))
@@ -65,5 +89,60 @@ public class GameState {
 
 	public void switchPlayer() {
 		currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
+	}
+
+  /*
+   * Three Truths helper functions . 
+   * */
+	public void markThreeTruthsPiece(Piece piece, int playerIndex) {
+	    this.pendingThreeTruthsPiece = piece;
+	    this.pendingThreeTruthsPlayerIndex = playerIndex;
+	    System.out.println("added a piece with a player index to the state mark three truths piece");
+	}
+	
+	public Piece getPendingThreeTruthsPiece() { return pendingThreeTruthsPiece; }
+	public int getPendingThreeTruthsPlayerIndex() { return pendingThreeTruthsPlayerIndex; }
+	public void clearPendingThreeTruthsPiece() {
+	    pendingThreeTruthsPiece = null;
+	    pendingThreeTruthsPlayerIndex = -1;
+	}
+  /*
+   * re-atoum helper functions .
+   * */
+	public void markAtoumPiece(Piece piece, int playerIndex) {
+	    this.pendingAtoumPiece = piece;
+	    this.pendingAtoumPlayerIndex = playerIndex;
+	    System.out.println("added a piece with a player index to the state mark re-atoum piece");
+	}
+	
+	public Piece getPendingAtoumPiece() { return pendingAtoumPiece; }
+	public int getPendingAtoumPlayerIndex() { return pendingAtoumPlayerIndex; }
+	public void clearPendingAtoumPiece() {
+	    pendingAtoumPiece = null;
+	    pendingAtoumPlayerIndex = -1;
+	}
+
+  /*
+   * Horus helper functions .
+   * */
+	public void markHorusPiece(Piece piece, int playerIndex) {
+	    this.pendingHorusPiece = piece;
+	    this.pendingHorusPlayerIndex = playerIndex;
+	    System.out.println("added a piece with a player index to the state mark re-atoum piece");
+	}
+	
+	public Piece getPendingHorusPiece() { return pendingHorusPiece; }
+	public int getPendingHorusPlayerIndex() { return pendingHorusPlayerIndex; }
+	public void clearPendingHorusPiece() {
+	    pendingHorusPiece = null;
+	    pendingHorusPlayerIndex = -1;
+	}
+
+
+  /*
+   * Just a helper function . 
+   * */
+	public void removePiece(Piece piece) {
+	    this.pieces.remove(piece);
 	}
 }

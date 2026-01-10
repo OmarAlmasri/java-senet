@@ -18,30 +18,30 @@ public class BoardFactory {
 	public Cell[] createBoard() {
 		Cell[] board = new Cell[30];
 		for (int i = 0; i < board.length; i++) {
-			int cellNumber = i + 1;
+			int cellNumber = i ;
 			
-			if (cellNumber == 15) {
+			if (cellNumber == 14) {
 				// House of Rebirth
 				board[i] = createSpecialCell(i);
-			} else if (cellNumber == 26) {
+			} else if (cellNumber == 25) { System.out.println("created a 26 cell.");
 				// House of Happiness
-				board[i] = createSpecialCell(i);
-			} else if (cellNumber == 27) {
+				board[cellNumber] = createSpecialCell(cellNumber);
+			} else if (cellNumber == 26) {
 				// House of Water
-				board[i] = createSpecialCell(i);
-			} else if (cellNumber == 28) {
+				board[cellNumber] = createSpecialCell(cellNumber);
+			} else if (cellNumber == 27) {
 				// House of Three Truths
-				board[i] = createSpecialCell(i);
-			} else if (cellNumber == 29) {
+				board[cellNumber] = createSpecialCell(cellNumber);
+			} else if (cellNumber == 28) {
 				// House of ReAtoum
-				board[i] = createSpecialCell(i);
-			} else if (cellNumber == 30) {
+				board[cellNumber] = createSpecialCell(cellNumber);
+			} else if (cellNumber == 29) {
 				// House of Horus
-				board[i] = createSpecialCell(i);
+				board[cellNumber] = createSpecialCell(cellNumber);
 			} else {
 				// Normal Cell
 				board[i] = createNormalCell(i);
-			}	
+			}
 		}
 		return board;
 	}
@@ -52,25 +52,26 @@ public class BoardFactory {
 	
 	protected Cell createSpecialCell(int index) {
 		CellEffect effect = null;
-		int cellNumber = index + 1;
+		int cellNumber = index;
 
 		switch (cellNumber) {
-			case 15:
+			case 14:
 				effect = new RebirthEffect();
 				break;
-			case 26:
+			case 25:
+        System.out.println("created a happiness effect and the cell number is :" + cellNumber);
 				effect = new HappinessEffect();
 				break;
-			case 27:
+			case 26:
 				effect = new WaterEffect();
 				break;
-			case 28:
+			case 27:
 				effect = new ThreeTruthsEffect();
 				break;
-			case 29:
+			case 28:
 				effect = new ReAtoumEffect();
 				break;
-			case 30:
+			case 29:
 				effect = new HorusEffect();
 				break;
 			default:

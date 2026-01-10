@@ -1,6 +1,7 @@
 package com.example.algo.player;
 
 import com.example.algo.move.Move;
+import com.example.algo.move.MovePiece;
 import com.example.algo.state.GameState;
 import com.example.algo.strategy.MoveStrategy;
 
@@ -21,8 +22,8 @@ public class Player {
 	/*
 	 * public functions 
 	 */
-	public Move play(GameState state) {
-		return strategy.chooseMove(state,this);
+	public Move play(GameState state, int stick) {
+		return strategy.chooseMove(state, this, stick);
 	}
 	
 	public String getName() {

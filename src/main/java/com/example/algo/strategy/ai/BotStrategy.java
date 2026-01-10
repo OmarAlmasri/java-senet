@@ -1,6 +1,6 @@
 package com.example.algo.strategy.ai;
 
-import com.example.algo.move.Move;
+import com.example.algo.move.*;
 import com.example.algo.player.Player;
 import com.example.algo.state.GameState;
 import com.example.algo.strategy.MoveStrategy;
@@ -10,7 +10,7 @@ import com.example.algo.strategy.MoveStrategy;
  * 			 same time without deleting the old ones 
  */
 public class BotStrategy implements MoveStrategy{
-	public Move chooseMove(GameState state , Player player) {
+	public MovePiece chooseMove(GameState state , Player player, int stick) {
 		// same as the humane strategy , this throw is to prevent errors 
 		// and here we would add the algorithm and then call the MovePiece function .
 		throw new UnsupportedOperationException();

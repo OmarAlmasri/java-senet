@@ -1,6 +1,6 @@
 package com.example.algo.util;
 
-import java.util.List;
+import java.util.*;
 
 import com.example.algo.player.Player;
 import com.example.algo.state.Cell;
@@ -10,6 +10,9 @@ import com.example.algo.state.SpecialCell;
 
 public class GeneralUtil {
 	public static void printBoard(GameState state) {
+    System.out.println("================================================================================================");
+    System.out.println("============================================SENET===============================================");
+    System.out.println("================================================================================================");
 		int rows = 3;
 	    int cols = 10;
 
@@ -100,10 +103,18 @@ public class GeneralUtil {
 	        }
 	        System.out.println();
 	    }
+    System.out.println("================================================================================================");
+    System.out.println("================================================================================================");
 	}
 	
 	public static boolean checkGameOver(GameState state) {
-		return state.pieces.isEmpty();
+		for (Player player : state.players) {
+	        if (state.getPiecesFor(player).isEmpty()) {
+	            System.out.println("Game over! " + player.getName() + " has no pieces left.");
+	            return true;
+	        }
+	    }
+	    return false;
 	}
 	
 	/**
@@ -131,21 +142,23 @@ public class GeneralUtil {
 			if (arrayIndex >= 0 && arrayIndex < state.board.length) {
 				Cell cell = state.board[arrayIndex];
 				if (cell instanceof SpecialCell) {
-					switch (cellNumber) {
-						case 15:
+          //System.out.print("special cell" + cell.index());
+				  switch (cell.index()) {
+						case 14:
 							return "R"; // Rebirth
-						case 26:
+						case 25:
 							return "H"; // Happiness
-						case 27:
+						case 26:
 							return "W"; // Water
-						case 28:
+						case 27:
 							return "3"; // Three Truths
-						case 29:
+						case 28:
 							return "A"; // Re-Atoum
-						case 30:
-							return "O"; // Horus
-					}
-				}
+						case 29:
+							return "0"; // Horus
+            default:
+              return "D";
+					}				}
 			}
 			return "·";
 		};
@@ -332,6 +345,7 @@ public class GeneralUtil {
 		Cell cell15 = state.getCell(14); // Array index 14 = Cell 15
 		Cell cell26 = state.getCell(25); // Array index 25 = Cell 26
 		Cell cell27 = state.getCell(26); // Array index 26 = Cell 27
+		Cell cell28 = state.getCell(27); // Array index 25 = Cell 27
 		System.out.println("   Cell 15 (index 14): " + (cell15 != null ? cell15.getClass().getSimpleName() : "NULL"));
 		System.out.println("   Cell 26 (index 25): " + (cell26 != null ? cell26.getClass().getSimpleName() : "NULL"));
 		System.out.println("   Cell 27 (index 26): " + (cell27 != null ? cell27.getClass().getSimpleName() : "NULL"));
@@ -398,4 +412,22 @@ public class GeneralUtil {
 
 		System.out.println("\n=== Initialization Test Complete ===\n");
 	}
+
+  public static void sendToReBirth(Piece piece, GameState state){
+	  	System.out.println("sent to rebirth ::supposed to::");
+      Set<Integer> occupied = new HashSet<>();
+	    for (Piece p : state.pieces) {
+	        occupied.add(p.getPosition());
+	    }
+
+	    // 14 stands for the house of re-birth index
+	    for (int pos = 14; pos >= 0; pos--) {
+	        if (!occupied.contains(pos)) {
+	            piece.moveTo(pos);
+	            break;
+	        }
+
+  }
+  }
+ 
 }
