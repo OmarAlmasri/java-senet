@@ -1,18 +1,286 @@
 package com.example.algo.strategy.ai;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.example.algo.move.*;
 import com.example.algo.player.Player;
+import com.example.algo.rules.RuleEngine;
 import com.example.algo.state.GameState;
+import com.example.algo.state.Piece;
 import com.example.algo.strategy.MoveStrategy;
+
 /*
  * DEV_NOTE: I added a package for each one to prevent deleting code 
  * 			 when I do it like this we can test multipul algos at the 
  * 			 same time without deleting the old ones 
  */
-public class BotStrategy implements MoveStrategy{
-	public MovePiece chooseMove(GameState state , Player player, int stick) {
-		// same as the humane strategy , this throw is to prevent errors 
-		// and here we would add the algorithm and then call the MovePiece function .
-		throw new UnsupportedOperationException();
+public class BotStrategy implements MoveStrategy {
+	/*
+	 * definitions
+	 */
+	private static final int MAX_DEPTH = 3; // we can change this later guys...
+
+	// also these values can be used for tuning our stupid algo
+	private static final int POSITION_WEIGHT = 10;
+	private static final int OPONENT_PENALTY = 5;
+	private static final int WIN_BONUS = 10000;
+	private static final int SPECIAL_CELL_BONUS = 50;
+
+	public MovePiece chooseMove(GameState state, Player player, int stick) {
+		List<MovePiece> moves = generateMoves(state, player, stick);
+
+		if (moves.isEmpty()) {
+			// No legal moves available - skip turn
+			return null;
+		}
+
+		if (moves.size() == 1) {
+			return moves.get(0);
+		}
+
+		MovePiece bestMove = null;
+		int bestValue = Integer.MIN_VALUE;
+
+		// Try all moves and evaluate the best one
+		for (MovePiece move : moves) {
+			// IMPORTANT: Create a fresh clone for each move evaluation
+			// The move's piece reference points to the original state, so we need to
+			// execute on a clone to avoid modifying the original state
+			GameState nexState = state.clone();
+
+			// Find the corresponding piece in the cloned state
+			Piece clonedPiece = null;
+			for (Piece p : nexState.pieces) {
+				if (p.getOwner().equals(move.getPiece().getOwner()) &&
+						p.getPosition() == move.getPiece().getPosition()) {
+					clonedPiece = p;
+					break;
+				}
+			}
+
+			if (clonedPiece == null) {
+				// Piece not found in clone - skip this move
+				continue;
+			}
+
+			// Create a new move with the cloned piece
+			MovePiece clonedMove = new MovePiece(clonedPiece, move.getTargetIndex());
+			clonedMove.execute(nexState);
+			nexState.switchPlayer();
+
+			// call Expectiminimax because the next turn is for the opponent
+			int value = expectiminimax(nexState, MAX_DEPTH - 1, player, false);
+
+			if (value > bestValue) {
+				bestValue = value;
+				bestMove = move; // Keep reference to original move (with original piece)
+			}
+		}
+
+		return bestMove != null ? bestMove : moves.get(0); // fallback to first move if no better move found
 	}
+
+	private int expectiminimax(GameState state, int depth, Player maximizingPlayer, boolean isMaxNode) {
+		if (depth == 0 || isTerminal(state)) {
+			return evaluate(state, maximizingPlayer);
+		}
+
+		if (isMaxNode) {
+			return maxValue(state, depth, maximizingPlayer);
+		} else {
+			return minValue(state, depth, maximizingPlayer);
+		}
+	}
+
+	private int minValue(GameState state, int depth, Player maximizingPlayer) {
+		return chanceValue(state, depth, maximizingPlayer, true);
+	}
+
+	private int maxValue(GameState state, int depth, Player maximizingPlayer) {
+		return chanceValue(state, depth, maximizingPlayer, false);
+	}
+
+	private int chanceValue(GameState state, int depth, Player maximizingPlayer, boolean isOurTurn) {
+		double expectedValue = 0.0;
+
+		// Probabilities
+		double[] probabilities = {
+				0.25, // 1: 4/16
+				0.375, // 2: 6/16
+				0.25, // 3: 4/16
+				0.0625, // 4: 1/16
+				0.0625, // 5: 1/16
+		};
+
+		int[] stickValues = { 1, 2, 3, 4, 5 };
+
+		for (int i = 0; i < stickValues.length; i++) {
+			int stickThrow = stickValues[i];
+			double probability = probabilities[i];
+
+			Player currentPlayer = isOurTurn ? maximizingPlayer : getOpponent(state, maximizingPlayer);
+
+			List<MovePiece> moves = generateMoves(state, currentPlayer, stickThrow);
+
+			if (moves.isEmpty()) {
+				// No legal moves, skip this throw
+				GameState nexState = state.clone();
+				nexState.switchPlayer();
+				int value = expectiminimax(nexState, depth - 1, maximizingPlayer, !isOurTurn);
+				expectedValue += probability * value;
+			} else {
+				// now we chose the best/worst move depending on the turn
+				int bestValue;
+
+				if (isOurTurn) {
+					// (maximizing player)
+					bestValue = Integer.MIN_VALUE;
+					for (MovePiece move : moves) {
+						GameState nexState = state.clone();
+						move.execute(nexState);
+						nexState.switchPlayer();
+						int value = expectiminimax(nexState, depth - 1, maximizingPlayer, false);
+						bestValue = Math.max(bestValue, value);
+					}
+				} else {
+					// (minimizing player)
+					bestValue = Integer.MAX_VALUE;
+					for (MovePiece move : moves) {
+						GameState nextState = state.clone();
+						move.execute(nextState);
+						nextState.switchPlayer();
+						int value = expectiminimax(nextState, depth - 1, maximizingPlayer, true);
+						bestValue = Math.min(bestValue, value);
+					}
+				}
+
+				expectedValue += probability * bestValue;
+			}
+		}
+
+		return (int) expectedValue;
+	}
+
+	private int evaluate(GameState state, Player maximizingPlayer) {
+		int score = 0;
+		Player opponent = getOpponent(state, maximizingPlayer);
+
+		// The closest piece to the goal is the best one (higher score)
+		List<Piece> myPieces = state.getPiecesFor(maximizingPlayer);
+		for (Piece piece : myPieces) {
+			int position = piece.getPosition();
+			if (position > 30) {
+				score += WIN_BONUS;
+			} else {
+				score += position * POSITION_WEIGHT;
+			}
+		}
+
+		// Opponent's pieces are penalized
+		List<Piece> opponentPieces = state.getPiecesFor(opponent);
+		for (Piece piece : opponentPieces) {
+			int position = piece.getPosition();
+			if (position > 30) {
+				score -= WIN_BONUS;
+			} else {
+				score -= position * OPONENT_PENALTY;
+			}
+		}
+
+		// Bonus for having a piece on the special cell
+		if (hasPieceOnCell(state, maximizingPlayer, 15)) {
+			score += SPECIAL_CELL_BONUS;
+		}
+		if (hasPieceOnCell(state, opponent, 15)) {
+			score -= SPECIAL_CELL_BONUS / 2;
+		}
+
+		if (hasPieceOnCell(state, maximizingPlayer, 26)) {
+			score += SPECIAL_CELL_BONUS;
+		}
+
+		// Bonuses for pieces on last 4 cells
+		for (Piece piece : myPieces) {
+			if (piece.getPosition() >= 26 && piece.getPosition() <= 30) {
+				score += 20;
+			}
+		}
+
+		// if our pieces are late, add penalty for us
+		for (Piece piece : myPieces) {
+			if (piece.getPosition() < 10) {
+				score -= 10;
+			}
+		}
+
+		return score;
+	}
+
+	private boolean isTerminal(GameState state) {
+		for (Player player : state.players) {
+			List<Piece> pieces = state.getPiecesFor(player);
+			boolean allRemoved = true;
+
+			for (Piece piece : pieces) {
+				if (piece.getPosition() <= 30) {
+					allRemoved = false;
+					break;
+				}
+			}
+
+			if (allRemoved) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private Player getOpponent(GameState state, Player player) {
+		for (Player p : state.players) {
+			if (!p.equals(player)) {
+				return p;
+			}
+		}
+		return null;
+	}
+
+	private boolean hasPieceOnCell(GameState state, Player player, int cellNumber) {
+		List<Piece> pieces = state.getPiecesFor(player);
+		for (Piece piece : pieces) {
+			if (piece.getPosition() == cellNumber) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private List<MovePiece> generateMoves(GameState state, Player player, int stickThrow) {
+		List<MovePiece> moves = new ArrayList<>();
+		List<Piece> playerPieces = state.getPiecesFor(player);
+
+		for (Piece piece : playerPieces) {
+			int currentPos = piece.getPosition();
+
+			// Skip pieces that have already exited
+			if (currentPos > 30) {
+				continue;
+			}
+
+			int targetPos = currentPos + stickThrow;
+
+			// Allow moves within board (1-30) OR exiting moves (31+) if piece is in last 5
+			// cells (26-30)
+			if (targetPos <= 30 || (currentPos >= 26 && currentPos <= 30)) {
+				MovePiece move = new MovePiece(piece, targetPos);
+
+				if (RuleEngine.isLegal(move, state)) {
+					moves.add(move);
+				}
+			}
+		}
+
+		return moves;
+	}
+
 }

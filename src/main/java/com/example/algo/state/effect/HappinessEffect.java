@@ -6,6 +6,6 @@ import com.example.algo.state.Piece;
 
 public class HappinessEffect implements CellEffect {
     public void apply(Piece peice, GameState state) {
-       System.out.println("inside the HappinessEffect apply function"); 
+        // Happiness effect applied - piece must land on this cell
     }
 }

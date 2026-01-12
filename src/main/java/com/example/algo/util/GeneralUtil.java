@@ -9,114 +9,153 @@ import com.example.algo.state.Piece;
 import com.example.algo.state.SpecialCell;
 
 public class GeneralUtil {
-	public static void printBoard(GameState state) {
-    System.out.println("================================================================================================");
-    System.out.println("============================================SENET===============================================");
-    System.out.println("================================================================================================");
-		int rows = 3;
-	    int cols = 10;
 
-	    // First, find max cell content length for alignment
-	    int maxLen = 0;
-	    for (int i = 0; i < state.board.length; i++) {
-	        final int idx = i;
-	        Cell cell = state.board[idx];
-	        Piece piece = state.pieces.stream()
-	        		.filter(p -> p.getPosition() == idx).findFirst()
-	        		.orElse(null);
-	        
-	        String content;
-	        if (piece != null) {
-	            content = piece.getOwner().getName();
-	        } else if (cell instanceof SpecialCell) {
-	            switch (i) {
-	                case 14:
-	                    content = "(Rebirth)";
-	                    break;
-	                case 25:
-	                    content = "(Happiness)";
-	                    break;
-	                case 26:
-	                    content = "(water)";
-	                    break;
-	                case 27:
-	                    content = "(3Truthes)";
-	                    break;
-	                case 28:
-	                    content = "(re-Atoume)";
-	                    break;
-	                case 29:
-	                    content = "(Horus)";
-	                    break;
-	                default:
-	                    content = "(Special)";
-	                    break;
-	            }
-	        } else {
-	            content = "(Empty)";
-	        }
-	       
-	        
-	        if (content.length() > maxLen) maxLen = content.length();
-	    }
+	// Coloring for Terminal
+	public static final String RESET = "\u001B[0m";
+	public static final String RED = "\u001B[31m";
+	public static final String GREEN = "\u001B[32m";
+	public static final String YELLOW = "\u001B[33m";
+	public static final String BLUE = "\u001B[34m";
+	public static final String PURPLE = "\u001B[35m";
+	public static final String CYAN = "\u001B[36m";
 
-	    for (int row = 0; row < rows; row++) {
-	        for (int col = (row == 1 ? cols - 1 : 0); (row == 1 ? col >= 0 : col < cols); col += (row == 1 ? -1 : 1)) {
-	            int index = row * cols + col;
-	            Cell cell = state.board[index];
-	            Piece piece = state.pieces.stream()
-	            		.filter(p -> p.getPosition() == index).findFirst()
-	            		.orElse(null);
-
-	            String content;
-		        if (piece != null) {
-		            content = piece.getOwner().getName();
-		        } else if (cell instanceof SpecialCell) {
-		            switch (index) {
-		                case 14:
-		                    content = "(Rebirth)";
-		                    break;
-		                case 25:
-		                    content = "(Happiness)";
-		                    break;
-		                case 26:
-		                    content = "(water)";
-		                    break;
-		                case 27:
-		                    content = "(3Truthes)";
-		                    break;
-		                case 28:
-		                    content = "(re-Atoume)";
-		                    break;
-		                case 29:
-		                    content = "(Horus)";
-		                    break;
-		                default:
-		                    content = "(Special)";
-		                    break;
-		            }
-		        } else {
-		            content = "(Empty)";
-		        }
-
-	            System.out.printf("[%02d:%-" + maxLen + "s] ", index, content);
-	        }
-	        System.out.println();
-	    }
-    System.out.println("================================================================================================");
-    System.out.println("================================================================================================");
+	/**
+	 * Helper method to get color for a player
+	 */
+	private static String getPlayerColor(Player player, Player[] players) {
+		if (player == null)
+			return RESET;
+		for (int i = 0; i < players.length; i++) {
+			if (players[i].equals(player)) {
+				// First player gets GREEN, second gets RED
+				return (i == 0) ? GREEN : RED;
+			}
+		}
+		return RESET;
 	}
-	
+
+	public static void printBoard(GameState state) {
+		System.out.println(
+				"================================================================================================");
+		System.out.println(
+				"============================================SENET===============================================");
+		System.out.println(
+				"================================================================================================");
+		int rows = 3;
+		int cols = 10;
+
+		// First, find max cell content length for alignment
+		int maxLen = 0;
+		for (int i = 0; i < state.board.length; i++) {
+			final int idx = i;
+			Cell cell = state.board[idx];
+			Piece piece = state.pieces.stream()
+					.filter(p -> p.getPosition() == idx).findFirst()
+					.orElse(null);
+
+			String content;
+			if (piece != null) {
+				content = piece.getOwner().getName();
+			} else if (cell instanceof SpecialCell) {
+				switch (i) {
+					case 14:
+						content = "(Rebirth)";
+						break;
+					case 25:
+						content = "(Happiness)";
+						break;
+					case 26:
+						content = "(water)";
+						break;
+					case 27:
+						content = "(3Truthes)";
+						break;
+					case 28:
+						content = "(re-Atoume)";
+						break;
+					case 29:
+						content = "(Horus)";
+						break;
+					default:
+						content = "(Special)";
+						break;
+				}
+			} else {
+				content = "(Empty)";
+			}
+
+			if (content.length() > maxLen)
+				maxLen = content.length();
+		}
+
+		for (int row = 0; row < rows; row++) {
+			for (int col = (row == 1 ? cols - 1 : 0); (row == 1 ? col >= 0 : col < cols); col += (row == 1 ? -1 : 1)) {
+				int index = row * cols + col;
+				Cell cell = state.board[index];
+				Piece piece = state.pieces.stream()
+						.filter(p -> p.getPosition() == index).findFirst()
+						.orElse(null);
+
+				String content;
+				String color = RESET;
+
+				if (piece != null) {
+					// Piece found - use player's color
+					content = piece.getOwner().getName();
+					color = getPlayerColor(piece.getOwner(), state.players);
+				} else if (cell instanceof SpecialCell) {
+					// Special cell - use purple/blue color
+					color = PURPLE;
+					switch (index) {
+						case 14:
+							content = "(Rebirth)";
+							break;
+						case 25:
+							content = "(Happiness)";
+							break;
+						case 26:
+							content = "(water)";
+							break;
+						case 27:
+							content = "(3Truthes)";
+							break;
+						case 28:
+							content = "(re-Atoume)";
+							break;
+						case 29:
+							content = "(Horus)";
+							break;
+						default:
+							content = "(Special)";
+							break;
+					}
+				} else {
+					// Empty cell - use yellow/cyan color
+					color = YELLOW;
+					content = "(Empty)";
+				}
+
+				// Print with color
+				System.out.printf(color + "[%02d:%-" + maxLen + "s]" + RESET + " ", index, content);
+			}
+			System.out.println();
+		}
+		System.out.println(
+				"================================================================================================");
+		System.out.println(
+				"================================================================================================");
+	}
+
 	public static boolean checkGameOver(GameState state) {
 		for (Player player : state.players) {
-	        if (state.getPiecesFor(player).isEmpty()) {
-	            System.out.println("Game over! " + player.getName() + " has no pieces left.");
-	            return true;
-	        }
-	    }
-	    return false;
+			if (state.getPiecesFor(player).isEmpty()) {
+				System.out.println("Game over! " + player.getName() + " has no pieces left.");
+				return true;
+			}
+		}
+		return false;
 	}
-	
+
 	/**
 	 * Prints a compact, clean board view
 	 */
@@ -142,8 +181,8 @@ public class GeneralUtil {
 			if (arrayIndex >= 0 && arrayIndex < state.board.length) {
 				Cell cell = state.board[arrayIndex];
 				if (cell instanceof SpecialCell) {
-          //System.out.print("special cell" + cell.index());
-				  switch (cell.index()) {
+					// System.out.print("special cell" + cell.index());
+					switch (cell.index()) {
 						case 14:
 							return "R"; // Rebirth
 						case 25:
@@ -156,9 +195,10 @@ public class GeneralUtil {
 							return "A"; // Re-Atoum
 						case 29:
 							return "0"; // Horus
-            default:
-              return "D";
-					}				}
+						default:
+							return "D";
+					}
+				}
 			}
 			return "·";
 		};
@@ -320,7 +360,7 @@ public class GeneralUtil {
 
 		System.out.println("=".repeat(80) + "\n");
 	}
-	
+
 	/**
 	 * Test method to verify game initialization
 	 * Call this right after creating the game state
@@ -413,21 +453,21 @@ public class GeneralUtil {
 		System.out.println("\n=== Initialization Test Complete ===\n");
 	}
 
-  public static void sendToReBirth(Piece piece, GameState state){
-	  	System.out.println("sent to rebirth ::supposed to::");
-      Set<Integer> occupied = new HashSet<>();
-	    for (Piece p : state.pieces) {
-	        occupied.add(p.getPosition());
-	    }
+	public static void sendToReBirth(Piece piece, GameState state) {
+		// System.out.println("sent to rebirth ::supposed to::");
+		Set<Integer> occupied = new HashSet<>();
+		for (Piece p : state.pieces) {
+			occupied.add(p.getPosition());
+		}
 
-	    // 14 stands for the house of re-birth index
-	    for (int pos = 14; pos >= 0; pos--) {
-	        if (!occupied.contains(pos)) {
-	            piece.moveTo(pos);
-	            break;
-	        }
+		// 14 stands for the house of re-birth index
+		for (int pos = 14; pos >= 0; pos--) {
+			if (!occupied.contains(pos)) {
+				piece.moveTo(pos);
+				break;
+			}
 
-  }
-  }
- 
+		}
+	}
+
 }

@@ -6,8 +6,7 @@ import com.example.algo.state.Piece;
 
 public class ThreeTruthsEffect implements CellEffect {
     public void apply(Piece piece, GameState state) {
-    	System.out.println("got a piece on the three truthes effect");
-    	int playerIndex = -1;
+        int playerIndex = -1;
         for (int i = 0; i < state.players.length; i++) {
             if (state.players[i].equals(piece.getOwner())) {
                 playerIndex = i;
