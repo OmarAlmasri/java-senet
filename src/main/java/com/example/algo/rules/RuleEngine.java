@@ -9,33 +9,53 @@ import com.example.algo.strategy.MoveStrategy;
  * DEV_NOTES: the returns here are wrong , just for naming . 
  */
 public class RuleEngine {
-	public static boolean isLegal(MovePiece move , GameState state) { 
+  public static boolean isLegal(MovePiece move, GameState state) {
     int piece_current_index = move.getPiece().getPosition();
-    int piece_target_index = move.getTargetIndex(); 
-    //TODO:
-    //1- if the current piece will be replaced with a piece from the same owner => return false. 
-    //2- if piece_current_index is < 25 and piece_target_index is > 25 => false 
-    //I don't this there is any other illegal moves ( there are moves that are bad for us , but that doesn't mean thery're illegal ! ).
-    Piece target = state.getPieceAtIndex(piece_target_index);
-    Piece current = move.getPiece();
-    if(target != null){
-      if(target.getOwner().equals(current.getOwner())) {
-        return false;
-      }else {return true;}
-    }else if (piece_current_index < 25 && piece_target_index > 25 ){
+    int piece_target_index = move.getTargetIndex();
+
+    // Rule 1: Cannot move to same cell
+    if (piece_current_index == piece_target_index) {
       return false;
     }
+
+    // Rule 2: Exiting the board (targetIndex > 30) is only legal if piece is in
+    // last 5 cells (26-30)
+    if (piece_target_index > 30) {
+      // Allow exit only if piece is in cells 26-30
+      return (piece_current_index >= 26 && piece_current_index <= 30);
+    }
+
+    // Rule 3: Cannot jump from before cell 25 to after cell 25 (must land exactly
+    // on 26)
+    if (piece_current_index < 25 && piece_target_index > 25) {
+      return false;
+    }
+
+    // Rule 4: If target cell has a piece, check ownership
+    if (piece_target_index < state.board.length) {
+      Piece target = state.getPieceAtIndex(piece_target_index);
+      if (target != null) {
+        // Cannot swap with own piece
+        if (target.getOwner().equals(move.getPiece().getOwner())) {
+          return false;
+        }
+        // Can swap with opponent piece
+        return true;
+      }
+    }
+
+    // Rule 5: All other moves are legal
     return true;
-	}
-	
-	public MovePiece resolveMove(Player player, 
-								MoveStrategy strategy, 
-								GameState state, 
-								int stick) {
-	    MovePiece move;
-	    do {
-	        move = strategy.chooseMove(state, player, stick);
-	    } while (!isLegal(move, state));
-	    return move;
-	}
+  }
+
+  public MovePiece resolveMove(Player player,
+      MoveStrategy strategy,
+      GameState state,
+      int stick) {
+    MovePiece move;
+    do {
+      move = strategy.chooseMove(state, player, stick);
+    } while (!isLegal(move, state));
+    return move;
+  }
 }

@@ -6,7 +6,7 @@ import com.example.algo.state.Piece;
 
 public class HorusEffect implements CellEffect {
     public void apply(Piece piece, GameState state) {
-      System.out.println("inside the HorusEffect apply function");
+    //   System.out.println("inside the HorusEffect apply function");
     	int playerIndex = -1;
         for (int i = 0; i < state.players.length; i++) {
             if (state.players[i].equals(piece.getOwner())) {
