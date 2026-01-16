@@ -17,7 +17,7 @@ import com.example.algo.util.StickThrow;
 public class App {
     public static void main(String[] args) {
 
-        Player human = new Player("Human", new HumanStrategy());
+        Player human = new Player("Player", new HumanStrategy());
         Player bot = new Player("Bot", new BotStrategy());
 
         Player[] players = { human, bot };
