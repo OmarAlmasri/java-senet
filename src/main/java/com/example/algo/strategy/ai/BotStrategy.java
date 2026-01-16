@@ -23,9 +23,14 @@ public class BotStrategy implements MoveStrategy {
 
 	// also these values can be used for tuning our stupid algo
 	private static final int POSITION_WEIGHT = 10;
-	private static final int OPONENT_PENALTY = 5;
+	private static final int OPONENT_PENALTY = 10;
 	private static final int WIN_BONUS = 10000;
 	private static final int SPECIAL_CELL_BONUS = 50;
+
+	// شباب هاد التعديل يلي خلا البوت متوحش
+	private static final int ADVANCED_POSITION_MULTIPLIER = 2; // Double weight for positions 20-30
+	private static final int MID_POSITION_MULTIPLIER = 1; // Normal weight for positions 10-19
+	private static final int EARLY_POSITION_MULTIPLIER = 1; // Normal weight for positions 1-9
 
 	public MovePiece chooseMove(GameState state, Player player, int stick) {
 		List<MovePiece> moves = generateMoves(state, player, stick);
@@ -44,9 +49,7 @@ public class BotStrategy implements MoveStrategy {
 
 		// Try all moves and evaluate the best one
 		for (MovePiece move : moves) {
-			// IMPORTANT: Create a fresh clone for each move evaluation
-			// The move's piece reference points to the original state, so we need to
-			// execute on a clone to avoid modifying the original state
+
 			GameState nexState = state.clone();
 
 			// Find the corresponding piece in the cloned state
@@ -140,7 +143,6 @@ public class BotStrategy implements MoveStrategy {
 					for (MovePiece move : moves) {
 						GameState nextState = state.clone();
 
-						// CRITICAL FIX: Find the corresponding piece in cloned state
 						Piece clonedPiece = findPieceInState(nextState, move.getPiece());
 
 						if (clonedPiece != null) {
@@ -159,7 +161,6 @@ public class BotStrategy implements MoveStrategy {
 					for (MovePiece move : moves) {
 						GameState nextState = state.clone();
 
-						// CRITICAL FIX: Find the corresponding piece in cloned state
 						Piece clonedPiece = findPieceInState(nextState, move.getPiece());
 
 						if (clonedPiece != null) {
@@ -202,14 +203,21 @@ public class BotStrategy implements MoveStrategy {
 		List<Piece> myPieces = state.getPiecesFor(maximizingPlayer);
 		List<Piece> opponentPieces = state.getPiecesFor(opponent);
 
-		// === POSITION EVALUATION (SYMMETRIC) ===
-		// Reward our progress, penalize opponent's progress EQUALLY
+
 		for (Piece piece : myPieces) {
 			int position = piece.getPosition();
 			if (position > 30) {
 				score += WIN_BONUS;
 			} else {
-				score += position * POSITION_WEIGHT;
+				int multiplier = 1;
+				if (position >= 20 && position <= 30) {
+					multiplier = ADVANCED_POSITION_MULTIPLIER;
+				} else if (position >= 10 && position < 20) {
+					multiplier = MID_POSITION_MULTIPLIER;
+				} else {
+					multiplier = EARLY_POSITION_MULTIPLIER;
+				}
+				score += position * POSITION_WEIGHT * multiplier;
 			}
 		}
 
@@ -218,59 +226,62 @@ public class BotStrategy implements MoveStrategy {
 			if (position > 30) {
 				score -= WIN_BONUS;
 			} else {
-				// FIXED: Same weight as our pieces
-				score -= position * POSITION_WEIGHT;
+				int multiplier = 1;
+				if (position >= 20 && position <= 30) {
+					multiplier = ADVANCED_POSITION_MULTIPLIER;
+				} else if (position >= 10 && position < 20) {
+					multiplier = MID_POSITION_MULTIPLIER;
+				} else {
+					multiplier = EARLY_POSITION_MULTIPLIER;
+				}
+				score -= position * POSITION_WEIGHT * multiplier;
 			}
 		}
 
-		// === SPECIAL CELL BONUSES (SYMMETRIC) ===
-		// Cell 15 (House of Rebirth) - EQUAL importance
 		if (hasPieceOnCell(state, maximizingPlayer, 15)) {
 			score += SPECIAL_CELL_BONUS;
 		}
 		if (hasPieceOnCell(state, opponent, 15)) {
-			// FIXED: Full penalty, not half
 			score -= SPECIAL_CELL_BONUS;
 		}
 
-		// Cell 26 (House of Happiness) - SYMMETRIC evaluation
 		if (hasPieceOnCell(state, maximizingPlayer, 26)) {
 			score += SPECIAL_CELL_BONUS;
 		}
-		// FIXED: Added opponent evaluation for cell 26
 		if (hasPieceOnCell(state, opponent, 26)) {
 			score -= SPECIAL_CELL_BONUS;
 		}
 
-		// === END GAME BONUS (26-30 cells) ===
 		for (Piece piece : myPieces) {
-			if (piece.getPosition() >= 26 && piece.getPosition() <= 30) {
-				score += 20;
+			int position = piece.getPosition();
+			if (position >= 26 && position <= 30) {
+				int bonus = 20 + (position - 25) * 15; // 26=35, 27=50, 28=65, 29=80, 30=95
+				score += bonus;
 			}
 		}
-		// FIXED: Penalize opponent's end-game position
 		for (Piece piece : opponentPieces) {
-			if (piece.getPosition() >= 26 && piece.getPosition() <= 30) {
-				score -= 20;
+			int position = piece.getPosition();
+			if (position >= 26 && position <= 30) {
+				int penalty = 20 + (position - 25) * 15; // 26=35, 27=50, 28=65, 29=80, 30=95
+				score -= penalty;
 			}
 		}
 
-		// === EARLY GAME PENALTY (SYMMETRIC) ===
-		// Penalize slow development for both players
 		for (Piece piece : myPieces) {
-			if (piece.getPosition() < 10) {
-				score -= 10;
+			int position = piece.getPosition();
+			if (position < 10) {
+				int penalty = position <= 3 ? 30 : (position <= 6 ? 20 : 10);
+				score -= penalty;
 			}
 		}
-		// FIXED: Reward when opponent has slow pieces
 		for (Piece piece : opponentPieces) {
-			if (piece.getPosition() < 10) {
-				score += 10;
+			int position = piece.getPosition();
+			if (position < 10) {
+				int reward = position <= 3 ? 30 : (position <= 6 ? 20 : 10);
+				score += reward;
 			}
 		}
 
-		// === ADDITIONAL STRATEGIC FACTORS ===
-		// Count pieces still in play (more pieces = better position)
 		int myActivePieces = 0;
 		int opponentActivePieces = 0;
 
