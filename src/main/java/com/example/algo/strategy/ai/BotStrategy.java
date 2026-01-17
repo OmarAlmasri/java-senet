@@ -36,7 +36,6 @@ public class BotStrategy implements MoveStrategy {
 		List<MovePiece> moves = generateMoves(state, player, stick);
 
 		if (moves.isEmpty()) {
-			// No legal moves available - skip turn
 			return null;
 		}
 
@@ -47,12 +46,11 @@ public class BotStrategy implements MoveStrategy {
 		MovePiece bestMove = null;
 		int bestValue = Integer.MIN_VALUE;
 
-		// Try all moves and evaluate the best one
 		for (MovePiece move : moves) {
 
 			GameState nexState = state.clone();
 
-			// Find the corresponding piece in the cloned state
+			// Find the piece in the cloned state
 			Piece clonedPiece = null;
 			for (Piece p : nexState.pieces) {
 				if (p.getOwner().equals(move.getPiece().getOwner()) &&
@@ -63,25 +61,22 @@ public class BotStrategy implements MoveStrategy {
 			}
 
 			if (clonedPiece == null) {
-				// Piece not found in clone - skip this move
 				continue;
 			}
 
-			// Create a new move with the cloned piece
 			MovePiece clonedMove = new MovePiece(clonedPiece, move.getTargetIndex());
 			clonedMove.execute(nexState);
 			nexState.switchPlayer();
 
-			// call Expectiminimax because the next turn is for the opponent
 			int value = expectiminimax(nexState, MAX_DEPTH - 1, player, false);
 
 			if (value > bestValue) {
 				bestValue = value;
-				bestMove = move; // Keep reference to original move (with original piece)
+				bestMove = move;
 			}
 		}
 
-		return bestMove != null ? bestMove : moves.get(0); // fallback to first move if no better move found
+		return bestMove != null ? bestMove : moves.get(0);
 	}
 
 	private int expectiminimax(GameState state, int depth, Player maximizingPlayer, boolean isMaxNode) {
@@ -97,12 +92,10 @@ public class BotStrategy implements MoveStrategy {
 	}
 
 	private int minValue(GameState state, int depth, Player maximizingPlayer) {
-		// minValue = opponent's turn (minimizing for us)
 		return chanceValue(state, depth, maximizingPlayer, false);
 	}
 
 	private int maxValue(GameState state, int depth, Player maximizingPlayer) {
-		// maxValue = our turn (maximizing for us)
 		return chanceValue(state, depth, maximizingPlayer, true);
 	}
 
@@ -129,7 +122,6 @@ public class BotStrategy implements MoveStrategy {
 			List<MovePiece> moves = generateMoves(state, currentPlayer, stickThrow);
 
 			if (moves.isEmpty()) {
-				// No legal moves, skip turn
 				GameState nextState = state.clone();
 				nextState.switchPlayer();
 				int value = expectiminimax(nextState, depth - 1, maximizingPlayer, !isOurTurn);
@@ -146,7 +138,6 @@ public class BotStrategy implements MoveStrategy {
 						Piece clonedPiece = findPieceInState(nextState, move.getPiece());
 
 						if (clonedPiece != null) {
-							// Create move with cloned piece
 							MovePiece clonedMove = new MovePiece(clonedPiece, move.getTargetIndex());
 							clonedMove.execute(nextState);
 							nextState.switchPlayer();
@@ -164,7 +155,6 @@ public class BotStrategy implements MoveStrategy {
 						Piece clonedPiece = findPieceInState(nextState, move.getPiece());
 
 						if (clonedPiece != null) {
-							// Create move with cloned piece
 							MovePiece clonedMove = new MovePiece(clonedPiece, move.getTargetIndex());
 							clonedMove.execute(nextState);
 							nextState.switchPlayer();
@@ -202,7 +192,6 @@ public class BotStrategy implements MoveStrategy {
 		// Get pieces for both players
 		List<Piece> myPieces = state.getPiecesFor(maximizingPlayer);
 		List<Piece> opponentPieces = state.getPiecesFor(opponent);
-
 
 		for (Piece piece : myPieces) {
 			int position = piece.getPosition();
@@ -282,21 +271,6 @@ public class BotStrategy implements MoveStrategy {
 			}
 		}
 
-		int myActivePieces = 0;
-		int opponentActivePieces = 0;
-
-		for (Piece piece : myPieces) {
-			if (piece.getPosition() <= 30)
-				myActivePieces++;
-		}
-		for (Piece piece : opponentPieces) {
-			if (piece.getPosition() <= 30)
-				opponentActivePieces++;
-		}
-
-		// Slight bonus for having more active pieces early in game
-		score += (myActivePieces - opponentActivePieces) * 5;
-
 		return score;
 	}
 
@@ -345,15 +319,12 @@ public class BotStrategy implements MoveStrategy {
 		for (Piece piece : playerPieces) {
 			int currentPos = piece.getPosition();
 
-			// Skip pieces that have already exited
 			if (currentPos > 30) {
 				continue;
 			}
 
 			int targetPos = currentPos + stickThrow;
 
-			// Allow moves within board (1-30) OR exiting moves (31+) if piece is in last 5
-			// cells (26-30)
 			if (targetPos <= 30 || (currentPos >= 26 && currentPos <= 30)) {
 				MovePiece move = new MovePiece(piece, targetPos);
 
