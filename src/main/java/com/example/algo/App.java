@@ -1,6 +1,7 @@
 package com.example.algo;
 
 import java.util.List;
+import java.util.Scanner;
 
 import com.example.algo.move.*;
 import com.example.algo.player.Player;
@@ -19,6 +20,15 @@ public class App {
 
         Player human = new Player("Player", new HumanStrategy());
         Player bot = new Player("Bot", new BotStrategy());
+
+        System.out.println("Enable verbose algorithm output? (y/n)");
+        Scanner scanner = new Scanner(System.in);
+        String response = scanner.nextLine();
+
+        if (response.equalsIgnoreCase("y")) {
+            BotStrategy.setVerboseMode(true);
+        }
+
 
         Player[] players = { human, bot };
 

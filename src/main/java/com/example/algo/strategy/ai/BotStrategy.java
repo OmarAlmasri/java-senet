@@ -10,49 +10,138 @@ import com.example.algo.state.GameState;
 import com.example.algo.state.Piece;
 import com.example.algo.strategy.MoveStrategy;
 
-/*
- * DEV_NOTE: I added a package for each one to prevent deleting code 
- * 			 when I do it like this we can test multipul algos at the 
- * 			 same time without deleting the old ones 
- */
 public class BotStrategy implements MoveStrategy {
-	/*
-	 * definitions
-	 */
-	private static final int MAX_DEPTH = 3; // we can change this later guys...
 
-	// also these values can be used for tuning our stupid algo
+	// ==================== CONSTANTS ====================
+	private static final int MAX_DEPTH = 3;
 	private static final int POSITION_WEIGHT = 10;
 	private static final int OPONENT_PENALTY = 10;
 	private static final int WIN_BONUS = 10000;
 	private static final int SPECIAL_CELL_BONUS = 50;
+	private static final int ADVANCED_POSITION_MULTIPLIER = 2;
+	private static final int MID_POSITION_MULTIPLIER = 1;
+	private static final int EARLY_POSITION_MULTIPLIER = 1;
 
-	// شباب هاد التعديل يلي خلا البوت متوحش
-	private static final int ADVANCED_POSITION_MULTIPLIER = 2; // Double weight for positions 20-30
-	private static final int MID_POSITION_MULTIPLIER = 1; // Normal weight for positions 10-19
-	private static final int EARLY_POSITION_MULTIPLIER = 1; // Normal weight for positions 1-9
+	// ==================== VERBOSE MODE ====================
+	private static boolean verboseMode = false;
+	private int nodeCounter = 0;
+	private int currentDepth = 0;
+
+	/**
+	 * Enable or disable verbose output
+	 * Call this before starting the game
+	 */
+	public static void setVerboseMode(boolean verbose) {
+		verboseMode = verbose;
+		if (verbose) {
+			System.out.println("╔═══════════════════════════════════════════════════╗");
+			System.out.println("║     VERBOSE MODE ENABLED - Algorithm Tracing     ║");
+			System.out.println("╚═══════════════════════════════════════════════════╝");
+		}
+	}
+
+	/**
+	 * Check if verbose mode is enabled
+	 */
+	public static boolean isVerboseMode() {
+		return verboseMode;
+	}
+
+	// ==================== VERBOSE HELPERS ====================
+
+	private void printSeparator() {
+		if (!verboseMode)
+			return;
+		System.out.println("═══════════════════════════════════════════════════");
+	}
+
+	private void printHeader(String header) {
+		if (!verboseMode)
+			return;
+		System.out.println("\n╔═══════════════════════════════════════════════════╗");
+		System.out.println("║ " + centerText(header, 49) + " ║");
+		System.out.println("╚═══════════════════════════════════════════════════╝");
+	}
+
+	private void printSubHeader(String text) {
+		if (!verboseMode)
+			return;
+		System.out.println("\n┌─────────────────────────────────────────────────┐");
+		System.out.println("│ " + text);
+		System.out.println("└─────────────────────────────────────────────────┘");
+	}
+
+	private void printIndented(int depth, String text) {
+		if (!verboseMode)
+			return;
+		String indent = "  ".repeat(depth);
+		System.out.println(indent + text);
+	}
+
+	private void printNodeInfo(String nodeType, int depth, String info) {
+		if (!verboseMode)
+			return;
+		nodeCounter++;
+		String indent = "  ".repeat(currentDepth - depth);
+		System.out.printf("%s[Node #%d] %s (Depth=%d) %s%n",
+				indent, nodeCounter, nodeType, depth, info);
+	}
+
+	private String centerText(String text, int width) {
+		int padding = (width - text.length()) / 2;
+		return " ".repeat(Math.max(0, padding)) + text;
+	}
+
+	// ==================== MAIN ALGORITHM ====================
 
 	public MovePiece chooseMove(GameState state, Player player, int stick) {
+		// Reset counters for this move
+		nodeCounter = 0;
+		currentDepth = MAX_DEPTH;
+
+		if (verboseMode) {
+			printHeader("NEW MOVE DECISION");
+			System.out.println("Player: " + player.getName());
+			System.out.println("Stick Throw: " + stick);
+			System.out.println("Max Depth: " + MAX_DEPTH);
+			printSeparator();
+		}
+
 		List<MovePiece> moves = generateMoves(state, player, stick);
 
 		if (moves.isEmpty()) {
-			// No legal moves available - skip turn
+			if (verboseMode) {
+				System.out.println("No legal moves available - skipping turn");
+			}
 			return null;
 		}
 
 		if (moves.size() == 1) {
+			if (verboseMode) {
+				System.out.println("!> Only one legal move available:");
+				printMoveInfo(moves.get(0), 0);
+			}
 			return moves.get(0);
+		}
+
+		if (verboseMode) {
+			printSubHeader("Evaluating " + moves.size() + " possible moves:");
 		}
 
 		MovePiece bestMove = null;
 		int bestValue = Integer.MIN_VALUE;
+		int moveIndex = 0;
 
-		// Try all moves and evaluate the best one
 		for (MovePiece move : moves) {
+			moveIndex++;
+
+			if (verboseMode) {
+				System.out.println("\n┌─ Move " + moveIndex + "/" + moves.size() + " ──────");
+				printMoveInfo(move, 1);
+			}
 
 			GameState nexState = state.clone();
 
-			// Find the corresponding piece in the cloned state
 			Piece clonedPiece = null;
 			for (Piece p : nexState.pieces) {
 				if (p.getOwner().equals(move.getPiece().getOwner()) &&
@@ -63,30 +152,56 @@ public class BotStrategy implements MoveStrategy {
 			}
 
 			if (clonedPiece == null) {
-				// Piece not found in clone - skip this move
+				if (verboseMode) {
+					System.out.println(" Piece not found in cloned state - skipping");
+				}
 				continue;
 			}
 
-			// Create a new move with the cloned piece
 			MovePiece clonedMove = new MovePiece(clonedPiece, move.getTargetIndex());
 			clonedMove.execute(nexState);
 			nexState.switchPlayer();
 
-			// call Expectiminimax because the next turn is for the opponent
 			int value = expectiminimax(nexState, MAX_DEPTH - 1, player, false);
+
+			if (verboseMode) {
+				System.out.printf("Expected Value: %d%n", value);
+				if (value > bestValue) {
+					System.out.println("NEW BEST MOVE!");
+				}
+			}
 
 			if (value > bestValue) {
 				bestValue = value;
-				bestMove = move; // Keep reference to original move (with original piece)
+				bestMove = move;
 			}
 		}
 
-		return bestMove != null ? bestMove : moves.get(0); // fallback to first move if no better move found
+		if (verboseMode) {
+			printHeader("DECISION SUMMARY");
+			System.out.println("Total Nodes Explored: " + nodeCounter);
+			System.out.println("Best Move Value: " + bestValue);
+			System.out.println("\n> CHOSEN MOVE:");
+			printMoveInfo(bestMove, 0);
+			printSeparator();
+		}
+
+		return bestMove != null ? bestMove : moves.get(0);
 	}
 
 	private int expectiminimax(GameState state, int depth, Player maximizingPlayer, boolean isMaxNode) {
 		if (depth == 0 || isTerminal(state)) {
-			return evaluate(state, maximizingPlayer);
+			int evalValue = evaluate(state, maximizingPlayer);
+
+			if (verboseMode) {
+				String nodeType = isTerminal(state) ? "TERMINAL" : "LEAF";
+				String explanation = isTerminal(state)
+						? String.format("Eval=%d (game over)", evalValue)
+						: String.format("Eval=%d (position score)", evalValue);
+				printNodeInfo(nodeType, depth, explanation);
+			}
+
+			return evalValue;
 		}
 
 		if (isMaxNode) {
@@ -97,19 +212,22 @@ public class BotStrategy implements MoveStrategy {
 	}
 
 	private int minValue(GameState state, int depth, Player maximizingPlayer) {
-		// minValue = opponent's turn (minimizing for us)
+		if (verboseMode) {
+			printNodeInfo("MIN", depth, "Opponent's turn");
+		}
 		return chanceValue(state, depth, maximizingPlayer, false);
 	}
 
 	private int maxValue(GameState state, int depth, Player maximizingPlayer) {
-		// maxValue = our turn (maximizing for us)
+		if (verboseMode) {
+			printNodeInfo("MAX", depth, "Computer's turn");
+		}
 		return chanceValue(state, depth, maximizingPlayer, true);
 	}
 
 	private int chanceValue(GameState state, int depth, Player maximizingPlayer, boolean isOurTurn) {
 		double expectedValue = 0.0;
 
-		// Probabilities for stick throws
 		double[] probabilities = {
 				0.25, // 1: 4/16
 				0.375, // 2: 6/16
@@ -120,6 +238,12 @@ public class BotStrategy implements MoveStrategy {
 
 		int[] stickValues = { 1, 2, 3, 4, 5 };
 
+		if (verboseMode) {
+			printNodeInfo("CHANCE", depth,
+					String.format("Expected value = Σ(p(stick) × best_value(stick)) | %s turn",
+							isOurTurn ? "Computer's" : "Opponent's"));
+		}
+
 		for (int i = 0; i < stickValues.length; i++) {
 			int stickThrow = stickValues[i];
 			double probability = probabilities[i];
@@ -129,24 +253,35 @@ public class BotStrategy implements MoveStrategy {
 			List<MovePiece> moves = generateMoves(state, currentPlayer, stickThrow);
 
 			if (moves.isEmpty()) {
-				// No legal moves, skip turn
 				GameState nextState = state.clone();
 				nextState.switchPlayer();
 				int value = expectiminimax(nextState, depth - 1, maximizingPlayer, !isOurTurn);
+
+				if (verboseMode) {
+					printIndented(MAX_DEPTH - depth + 1,
+							String.format("  Stick=%d (p=%.4f): No moves → skip → value=%d",
+									stickThrow, probability, value));
+				}
+
 				expectedValue += probability * value;
 			} else {
 				int bestValue;
 
 				if (isOurTurn) {
-					// Maximizing player
 					bestValue = Integer.MIN_VALUE;
+
+					if (verboseMode) {
+						printIndented(MAX_DEPTH - depth + 1,
+								String.format("  Stick=%d (p=%.1f%%): %d moves → pick MAX value",
+										stickThrow, probability * 100, moves.size()));
+					}
+
 					for (MovePiece move : moves) {
 						GameState nextState = state.clone();
 
 						Piece clonedPiece = findPieceInState(nextState, move.getPiece());
 
 						if (clonedPiece != null) {
-							// Create move with cloned piece
 							MovePiece clonedMove = new MovePiece(clonedPiece, move.getTargetIndex());
 							clonedMove.execute(nextState);
 							nextState.switchPlayer();
@@ -155,16 +290,26 @@ public class BotStrategy implements MoveStrategy {
 							bestValue = Math.max(bestValue, value);
 						}
 					}
+
+					if (verboseMode) {
+						printIndented(MAX_DEPTH - depth + 1,
+								String.format("    → Best MAX value: %d", bestValue));
+					}
 				} else {
-					// Minimizing player
 					bestValue = Integer.MAX_VALUE;
+
+					if (verboseMode) {
+						printIndented(MAX_DEPTH - depth + 1,
+								String.format("  Stick=%d (p=%.1f%%): %d moves → pick MIN value",
+										stickThrow, probability * 100, moves.size()));
+					}
+
 					for (MovePiece move : moves) {
 						GameState nextState = state.clone();
 
 						Piece clonedPiece = findPieceInState(nextState, move.getPiece());
 
 						if (clonedPiece != null) {
-							// Create move with cloned piece
 							MovePiece clonedMove = new MovePiece(clonedPiece, move.getTargetIndex());
 							clonedMove.execute(nextState);
 							nextState.switchPlayer();
@@ -173,18 +318,27 @@ public class BotStrategy implements MoveStrategy {
 							bestValue = Math.min(bestValue, value);
 						}
 					}
+
+					if (verboseMode) {
+						printIndented(MAX_DEPTH - depth + 1,
+								String.format("    → Best MIN value: %d", bestValue));
+					}
 				}
 
 				expectedValue += probability * bestValue;
 			}
 		}
 
+		if (verboseMode) {
+			// Show calculation breakdown for educational purposes
+			printIndented(MAX_DEPTH - depth,
+					String.format("    Expected value: %.2f → %d (weighted average of all stick outcomes)",
+							expectedValue, (int) expectedValue));
+		}
+
 		return (int) expectedValue;
 	}
 
-	/**
-	 * Helper method to find the corresponding piece in a cloned state
-	 */
 	private Piece findPieceInState(GameState state, Piece originalPiece) {
 		for (Piece p : state.pieces) {
 			if (p.getOwner().equals(originalPiece.getOwner()) &&
@@ -199,11 +353,10 @@ public class BotStrategy implements MoveStrategy {
 		int score = 0;
 		Player opponent = getOpponent(state, maximizingPlayer);
 
-		// Get pieces for both players
 		List<Piece> myPieces = state.getPiecesFor(maximizingPlayer);
 		List<Piece> opponentPieces = state.getPiecesFor(opponent);
 
-
+		// Position evaluation with multipliers
 		for (Piece piece : myPieces) {
 			int position = piece.getPosition();
 			if (position > 30) {
@@ -238,6 +391,7 @@ public class BotStrategy implements MoveStrategy {
 			}
 		}
 
+		// Special cells
 		if (hasPieceOnCell(state, maximizingPlayer, 15)) {
 			score += SPECIAL_CELL_BONUS;
 		}
@@ -252,21 +406,23 @@ public class BotStrategy implements MoveStrategy {
 			score -= SPECIAL_CELL_BONUS;
 		}
 
+		// Endgame bonus
 		for (Piece piece : myPieces) {
 			int position = piece.getPosition();
 			if (position >= 26 && position <= 30) {
-				int bonus = 20 + (position - 25) * 15; // 26=35, 27=50, 28=65, 29=80, 30=95
+				int bonus = 20 + (position - 25) * 15;
 				score += bonus;
 			}
 		}
 		for (Piece piece : opponentPieces) {
 			int position = piece.getPosition();
 			if (position >= 26 && position <= 30) {
-				int penalty = 20 + (position - 25) * 15; // 26=35, 27=50, 28=65, 29=80, 30=95
+				int penalty = 20 + (position - 25) * 15;
 				score -= penalty;
 			}
 		}
 
+		// Early game penalty
 		for (Piece piece : myPieces) {
 			int position = piece.getPosition();
 			if (position < 10) {
@@ -281,21 +437,6 @@ public class BotStrategy implements MoveStrategy {
 				score += reward;
 			}
 		}
-
-		int myActivePieces = 0;
-		int opponentActivePieces = 0;
-
-		for (Piece piece : myPieces) {
-			if (piece.getPosition() <= 30)
-				myActivePieces++;
-		}
-		for (Piece piece : opponentPieces) {
-			if (piece.getPosition() <= 30)
-				opponentActivePieces++;
-		}
-
-		// Slight bonus for having more active pieces early in game
-		score += (myActivePieces - opponentActivePieces) * 5;
 
 		return score;
 	}
@@ -345,15 +486,12 @@ public class BotStrategy implements MoveStrategy {
 		for (Piece piece : playerPieces) {
 			int currentPos = piece.getPosition();
 
-			// Skip pieces that have already exited
 			if (currentPos > 30) {
 				continue;
 			}
 
 			int targetPos = currentPos + stickThrow;
 
-			// Allow moves within board (1-30) OR exiting moves (31+) if piece is in last 5
-			// cells (26-30)
 			if (targetPos <= 30 || (currentPos >= 26 && currentPos <= 30)) {
 				MovePiece move = new MovePiece(piece, targetPos);
 
@@ -366,4 +504,33 @@ public class BotStrategy implements MoveStrategy {
 		return moves;
 	}
 
+	// ==================== VERBOSE UTILITY METHODS ====================
+
+	private void printMoveInfo(MovePiece move, int indentLevel) {
+		if (!verboseMode || move == null)
+			return;
+
+		String indent = "  ".repeat(indentLevel);
+		Piece piece = move.getPiece();
+		int from = piece.getPosition();
+		int to = move.getTargetIndex();
+
+		System.out.printf("%sPiece: %s | Position: %d → %d | Distance: %d%n",
+				indent, piece.getOwner().getName(), from, to, (to - from));
+	}
+
+	/**
+	 * Print detailed statistics about the current search
+	 */
+	public void printStatistics() {
+		if (!verboseMode)
+			return;
+
+		printHeader("SEARCH STATISTICS");
+		System.out.println("Total nodes explored: " + nodeCounter);
+		System.out.println("Maximum depth: " + MAX_DEPTH);
+		System.out.println("Branching factor (avg): ~35 (5 stick × 7 pieces)");
+		System.out.println("Theoretical max nodes: " + Math.pow(35, MAX_DEPTH));
+		printSeparator();
+	}
 }
