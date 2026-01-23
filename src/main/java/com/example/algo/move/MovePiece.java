@@ -52,7 +52,6 @@ public class MovePiece implements Move {
 				targetCell.onLand(piece, state);
 			}
 		} else {
-      System.out.println("removed a piece for getting out of bounds");
       state.removePiece(piece);
     }
 		// If targetIndex >= 30, piece has exited - no need to call onLand

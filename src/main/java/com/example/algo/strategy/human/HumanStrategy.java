@@ -1,5 +1,7 @@
 package com.example.algo.strategy.human;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 
 import com.example.algo.move.MovePiece;
@@ -9,13 +11,13 @@ import com.example.algo.strategy.MoveStrategy;
 
 public class HumanStrategy implements MoveStrategy {
 	public MovePiece chooseMove(GameState state, Player player, int stick) {
-		// TODO:
-		// 1- throw a stick .
-		// 2- take the user input for the piece he want's to move .
-		// 3- check if there is a piece there , and if it's belongs to the player . if
-		// no => continue .
-		// 4- check if the move is legal . if not => continue and re-choose a move .
-		// 5- if the move is legal => return the move .
+		// First, check if there are any legal moves available
+		List<MovePiece> legalMoves = generateLegalMoves(state, player, stick);
+		
+		if (legalMoves.isEmpty()) {
+			System.out.println("No legal moves available - skipping turn");
+			return null;
+		}
 
 		// Note: Scanner is not closed intentionally - closing it would close System.in
 		@SuppressWarnings("resource")
@@ -25,25 +27,24 @@ public class HumanStrategy implements MoveStrategy {
 
 		while (!isLegal) {
 			System.out.println("Human Turn: " + player.getName() + ", stick rolled: " + stick);
-			System.out.print("Enter piece index to move (0-29) or 's' to skip turn: ");
+			System.out.print("Enter piece index to move (0-29): ");
 
-			// Check if input is a string (for 's' to skip)
+			// Check if input is available
 			if (input.hasNext()) {
 				String userInput = input.next().trim().toLowerCase();
 
-				// Check if user wants to skip turn
+				// Check if user wants to skip turn (only allowed if no legal moves)
 				if (userInput.equals("s")) {
-					System.out.println("Turn skipped.");
-					return null; // Return null to skip turn
+					System.out.println("You cannot skip when legal moves are available! Please make a move.");
+					continue;
 				}
 
 				// Try to parse as integer
 				try {
 					int index = Integer.parseInt(userInput);
 
-
 					if (index < 0 || index >= state.board.length) {
-						System.out.println("Index out of bounds! Enter a number between 1 and 30.");
+						System.out.println("Index out of bounds! Enter a number between 0 and 29.");
 						continue;
 					}
 
@@ -62,11 +63,41 @@ public class HumanStrategy implements MoveStrategy {
 					if (!isLegal)
 						System.out.println("Illegal move! Try again.");
 				} catch (NumberFormatException e) {
-					System.out.println("Invalid input! Enter a number (0-29) or 's' to skip.");
+					System.out.println("Invalid input! Enter a number (0-29).");
 				}
 			}
 		}
 
 		return move;
+	}
+
+	/**
+	 * Generate all legal moves for a player given a stick value
+	 */
+	private List<MovePiece> generateLegalMoves(GameState state, Player player, int stickThrow) {
+		List<MovePiece> moves = new ArrayList<>();
+		List<Piece> playerPieces = state.getPiecesFor(player);
+
+		for (Piece piece : playerPieces) {
+			int currentPos = piece.getPosition();
+
+			// Skip pieces that have already finished
+			if (currentPos > 30) {
+				continue;
+			}
+
+			int targetPos = currentPos + stickThrow;
+
+			// Check if this move is possible (either within board or exiting from last 5 cells)
+			if (targetPos <= 30 || (currentPos >= 26 && currentPos <= 30)) {
+				MovePiece move = new MovePiece(piece, targetPos);
+
+				if (com.example.algo.rules.RuleEngine.isLegal(move, state)) {
+					moves.add(move);
+				}
+			}
+		}
+
+		return moves;
 	}
 }
