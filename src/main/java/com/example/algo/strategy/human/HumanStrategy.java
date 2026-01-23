@@ -25,7 +25,7 @@ public class HumanStrategy implements MoveStrategy {
 
 		while (!isLegal) {
 			System.out.println("Human Turn: " + player.getName() + ", stick rolled: " + stick);
-			System.out.print("Enter piece index to move (1-30) or 's' to skip turn: ");
+			System.out.print("Enter piece index to move (0-29) or 's' to skip turn: ");
 
 			// Check if input is a string (for 's' to skip)
 			if (input.hasNext()) {
@@ -62,7 +62,7 @@ public class HumanStrategy implements MoveStrategy {
 					if (!isLegal)
 						System.out.println("Illegal move! Try again.");
 				} catch (NumberFormatException e) {
-					System.out.println("Invalid input! Enter a number (1-30) or 's' to skip.");
+					System.out.println("Invalid input! Enter a number (0-29) or 's' to skip.");
 				}
 			}
 		}

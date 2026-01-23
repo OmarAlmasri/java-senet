@@ -6,7 +6,6 @@ import com.example.algo.state.*;
 import com.example.algo.strategy.MoveStrategy;
 
 /*
- * DEV_NOTES: the returns here are wrong , just for naming . 
  */
 public class RuleEngine {
   public static boolean isLegal(MovePiece move, GameState state) {
