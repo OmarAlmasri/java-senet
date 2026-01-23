@@ -51,9 +51,7 @@ public class MovePiece implements Move {
 			if (targetCell != null) {
 				targetCell.onLand(piece, state);
 			}
-		} else {
-      state.removePiece(piece);
-    }
+		}
 		// If targetIndex >= 30, piece has exited - no need to call onLand
 	}
 }

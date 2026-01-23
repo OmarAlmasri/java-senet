@@ -147,10 +147,8 @@ public class GeneralUtil {
 	}
 
 	public static boolean checkGameOver(GameState state) {
-    System.out.println("checking the game over");
 		for (Player player : state.players) {
-				System.out.println(" checking remaining " + player.getName() + " pieces and the number is " + state.getPiecesFor(player).size());
-			if (state.getPiecesFor(player).size() <= 0) {
+			if (state.getPiecesFor(player).isEmpty()) {
 				System.out.println("Game over! " + player.getName() + " has no pieces left.");
 				return true;
 			}

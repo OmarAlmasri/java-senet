@@ -50,10 +50,8 @@ public class App {
         // 3- create a game loop
         // this would be the most important function cause here everything would work.
         while (!gameOver) {
-
             // Current player
             Player current = state.getCurrentPlayer();
-            System.out.println("the current player is :" + current.getName());
             GeneralUtil.printBoard(state);
             int stick = StickThrow.throwSticks();
 
@@ -178,7 +176,7 @@ public class App {
             }
 
             gameOver = GeneralUtil.checkGameOver(state);
-            System.out.println("checked the game over ");
+
             state.switchPlayer();
         }
 
